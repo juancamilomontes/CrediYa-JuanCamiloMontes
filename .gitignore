@@ -1,0 +1,4 @@
+# Configuración de IDEs en la raíz del repo (cada microservicio tiene su propio .gitignore)
+.idea/
+.vscode/
+*.iml
