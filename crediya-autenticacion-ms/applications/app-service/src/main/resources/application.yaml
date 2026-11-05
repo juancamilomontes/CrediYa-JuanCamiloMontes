@@ -1,16 +1,17 @@
+##Spring Configuration
 server:
   port: 8080
 spring:
   application:
-    name: "CrediYa"
+    name: crediya-autenticacion-ms
   devtools:
     add-properties: false
   h2:
     console:
       enabled: true
-      path: "/h2"
+      path: /h2
   profiles:
-    include: null
+    include:
 management:
   endpoints:
     web:
