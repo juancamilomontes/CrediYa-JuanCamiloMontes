@@ -5,20 +5,16 @@ spring:
     name: "crediya-autenticacion-ms"
   devtools:
     add-properties: false
-  h2:
-    console:
-      enabled: true
-      path: "/h2"
   profiles:
     include: null
   datasource:
-    # Base H2 en archivo: los usuarios quedan guardados aunque se reinicie la app (HU1).
-    url: "jdbc:h2:file:./data/crediya-autenticacion"
-    username: "sa"
-    password: ""
-    driverClassName: "org.h2.Driver"
+    # PostgreSQL 17 en Docker (WSL): contenedor postgres_local, base mydb.
+    url: "jdbc:postgresql://localhost:5432/mydb"
+    username: "postgres"
+    password: "postgres"
+    driverClassName: "org.postgresql.Driver"
   jpa:
-    databasePlatform: "org.hibernate.dialect.H2Dialect"
+    databasePlatform: "org.hibernate.dialect.PostgreSQLDialect"
 management:
   endpoints:
     web:
