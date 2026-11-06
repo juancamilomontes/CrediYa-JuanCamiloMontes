@@ -2,3 +2,7 @@
 .idea/
 .vscode/
 *.iml
+
+# Archivos de la base H2 local
+*.mv.db
+*.trace.db
