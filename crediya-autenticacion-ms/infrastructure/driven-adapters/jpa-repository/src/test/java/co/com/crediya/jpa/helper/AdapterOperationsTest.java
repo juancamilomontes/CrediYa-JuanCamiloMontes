@@ -2,6 +2,8 @@ package co.com.crediya.jpa.helper;
 
 import co.com.crediya.jpa.JPARepository;
 import co.com.crediya.jpa.JPARepositoryAdapter;
+import co.com.crediya.jpa.entity.UserEntity;
+import co.com.crediya.model.user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -26,73 +29,50 @@ class AdapterOperationsTest {
 
     private JPARepositoryAdapter adapter;
 
+    private final UserEntity entity = UserEntity.builder()
+            .id("1").nombres("Ana").apellidos("Gomez").correoElectronico("ana@mail.com").build();
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-
-        when(objectMapper.map("value", Object.class)).thenReturn("value");
-
         adapter = new JPARepositoryAdapter(repository, objectMapper);
     }
 
     @Test
-    void testSave() {
-
-        Object objectValue = "value";
-
-        when(repository.save(objectValue)).thenReturn(objectValue);
-
-        Object result = adapter.save(objectValue);
-
-        assertEquals(result, objectValue);
-    }
-
-    @Test
     void testSaveAllEntities() {
+        when(repository.saveAll(any())).thenReturn(List.of(entity, entity));
 
-        List<Object> objectValues = List.of("value", "value");
+        List<User> result = adapter.saveAllEntities(List.of(User.builder().build(), User.builder().build()));
 
-        when(repository.saveAll(objectValues)).thenReturn(objectValues);
-
-        Object result = adapter.saveAllEntities(objectValues);
-
-        assertEquals(result, objectValues);
+        assertEquals(2, result.size());
+        assertEquals("ana@mail.com", result.get(0).getCorreoElectronico());
     }
 
     @Test
     void testFindById() {
+        when(repository.findById("1")).thenReturn(Optional.of(entity));
 
-        Object objectValue = "value";
+        assertEquals("Ana", adapter.findById("1").getNombres());
+    }
 
-        when(repository.findById("id")).thenReturn(Optional.of(objectValue));
+    @Test
+    void testFindByIdNotFound() {
+        when(repository.findById("2")).thenReturn(Optional.empty());
 
-        Object result = adapter.findById("id");
-
-        assertEquals(result, objectValue);
+        assertNull(adapter.findById("2"));
     }
 
     @Test
     void testFindAll() {
+        when(repository.findAll()).thenReturn(List.of(entity));
 
-        List<Object> objectValues = List.of("value", "value");
-
-        when(repository.findAll()).thenReturn(objectValues);
-
-        Object result = adapter.findAll();
-
-        assertEquals(result, objectValues);
+        assertEquals(1, adapter.findAll().size());
     }
 
     @Test
     void testFindByExample() {
+        when(repository.findAll(any(Example.class))).thenReturn(List.of(entity));
 
-        Object objectValue = "value";
-        List<Object> objectValues = List.of(objectValue, objectValue);
-
-        when(repository.findAll(any(Example.class))).thenReturn(objectValues);
-
-        Object result = adapter.findByExample(objectValue);
-
-        assertEquals(result, objectValues);
+        assertEquals(1, adapter.findByExample(User.builder().nombres("Ana").build()).size());
     }
 }
