@@ -1,0 +1,58 @@
+### HU1 - 1) Registrar usuario válido -> 201 Created
+POST http://localhost:8080/api/v1/usuarios
+Content-Type: application/json
+
+{
+  "nombres": "Juan Camilo",
+  "apellidos": "Montes",
+  "fecha_nacimiento": "2000-01-15",
+  "direccion": "Calle 10 # 20-30",
+  "telefono": "3001234567",
+  "correo_electronico": "juan@mail.com",
+  "salario_base": 3000000
+}
+
+### HU1 - 2) Mismo correo (en mayúsculas) -> 409 Conflict
+POST http://localhost:8080/api/v1/usuarios
+Content-Type: application/json
+
+{
+  "nombres": "Otra",
+  "apellidos": "Persona",
+  "correo_electronico": "JUAN@mail.com",
+  "salario_base": 1000000
+}
+
+### HU1 - 3) Campos obligatorios vacíos -> 400 Bad Request (4 errores)
+POST http://localhost:8080/api/v1/usuarios
+Content-Type: application/json
+
+{
+  "nombres": "",
+  "apellidos": null
+}
+
+### HU1 - 4) Correo inválido y salario fuera de rango -> 400 Bad Request
+POST http://localhost:8080/api/v1/usuarios
+Content-Type: application/json
+
+{
+  "nombres": "Luis",
+  "apellidos": "Perez",
+  "correo_electronico": "luis@",
+  "salario_base": 20000000
+}
+
+### HU1 - 5) Salario no numérico -> 400 Bad Request
+POST http://localhost:8080/api/v1/usuarios
+Content-Type: application/json
+
+{
+  "nombres": "Luis",
+  "apellidos": "Perez",
+  "correo_electronico": "luis@mail.com",
+  "salario_base": "mucho"
+}
+
+### Health check -> 200 UP
+GET http://localhost:8080/actuator/health
