@@ -41,7 +41,7 @@ public class JpaConfig {
     @Bean
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(
             DataSource dataSource,
-            @Value("${spring.jpa.databasePlatform}") String dialect) {
+            @Value("${spring.jpa.databasePlatform:}") String dialect) {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource);
         em.setPackagesToScan("co.com.crediya.jpa");
@@ -50,8 +50,12 @@ public class JpaConfig {
         em.setJpaVendorAdapter(vendorAdapter);
 
         Properties properties = new Properties();
-        properties.setProperty("hibernate.dialect", dialect);
-        properties.setProperty("hibernate.hbm2ddl.auto", "update"); // TODO: remove this for non auto create schema
+        // Hibernate detecta el dialecto solo a partir de la conexión; solo se fija si se configura.
+        if (dialect != null && !dialect.isBlank()) {
+            properties.setProperty("hibernate.dialect", dialect);
+        }
+        // Crea/actualiza la tabla al arrancar. Para producción se debería usar migraciones (Flyway).
+        properties.setProperty("hibernate.hbm2ddl.auto", "update");
         em.setJpaProperties(properties);
 
         return em;

@@ -9,12 +9,13 @@ spring:
     include: null
   datasource:
     # PostgreSQL 17 en Docker (WSL): contenedor postgres_local, base mydb.
-    url: "jdbc:postgresql://localhost:5432/mydb"
-    username: "postgres"
-    password: "postgres"
+    # Se leen de variables de entorno; si no existen, usa los valores locales de desarrollo.
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/mydb}"
+    username: "${DB_USERNAME:postgres}"
+    password: "${DB_PASSWORD:postgres}"
     driverClassName: "org.postgresql.Driver"
   jpa:
-    databasePlatform: "org.hibernate.dialect.PostgreSQLDialect"
+    open-in-view: false
 management:
   endpoints:
     web:
