@@ -7,10 +7,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 /**
- * Entidad de dominio: un usuario (solicitante) registrado en CrediYa.
+ * Entidad de dominio: un usuario de CrediYa (tabla "usuario" del diagrama).
  * No conoce nada de base de datos ni de HTTP: solo el negocio.
  */
 @Getter
@@ -19,12 +18,12 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class User {
-    private String id;
-    private String nombres;
-    private String apellidos;
-    private LocalDate fechaNacimiento;
-    private String direccion;
+    private Integer idUsuario;
+    private String nombre;
+    private String apellido;
+    private String email;
+    private String documentoIdentidad;
     private String telefono;
-    private String correoElectronico;
+    private Integer idRol;
     private BigDecimal salarioBase;
 }

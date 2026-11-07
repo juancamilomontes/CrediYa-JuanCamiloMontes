@@ -1,6 +1,7 @@
 package co.com.crediya.api;
 
 import co.com.crediya.api.exception.GlobalExceptionHandler;
+import co.com.crediya.model.exceptions.DocumentAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.EmailAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.InvalidUserDataException;
 import co.com.crediya.model.user.User;
@@ -12,7 +13,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -28,12 +28,12 @@ class UserControllerTest {
     private static final String URL = "/api/v1/usuarios";
     private static final String VALID_BODY = """
             {
-              "nombres": "Ana",
-              "apellidos": "Gomez",
-              "fecha_nacimiento": "1995-05-10",
-              "direccion": "Calle 1",
+              "nombre": "Ana",
+              "apellido": "Gomez",
+              "email": "ana@mail.com",
+              "documento_identidad": "1020304050",
               "telefono": "3001234567",
-              "correo_electronico": "ana@mail.com",
+              "id_rol": 3,
               "salario_base": 2500000
             }
             """;
@@ -52,19 +52,31 @@ class UserControllerTest {
     @Test
     void shouldReturn201WhenUserIsRegistered() throws Exception {
         when(userUseCase.registerUser(any(User.class))).thenReturn(User.builder()
-                .id("abc-123")
-                .nombres("Ana")
-                .apellidos("Gomez")
-                .fechaNacimiento(LocalDate.of(1995, 5, 10))
-                .correoElectronico("ana@mail.com")
+                .idUsuario(7)
+                .nombre("Ana")
+                .apellido("Gomez")
+                .email("ana@mail.com")
+                .documentoIdentidad("1020304050")
+                .idRol(3)
                 .salarioBase(new BigDecimal("2500000"))
                 .build());
 
         mockMvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(VALID_BODY))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value("abc-123"))
-                .andExpect(jsonPath("$.correo_electronico").value("ana@mail.com"))
-                .andExpect(jsonPath("$.fecha_nacimiento").value("1995-05-10"));
+                .andExpect(jsonPath("$.id_usuario").value(7))
+                .andExpect(jsonPath("$.email").value("ana@mail.com"))
+                .andExpect(jsonPath("$.documento_identidad").value("1020304050"))
+                .andExpect(jsonPath("$.id_rol").value(3));
+    }
+
+    @Test
+    void shouldReturn409WhenDocumentAlreadyExists() throws Exception {
+        when(userUseCase.registerUser(any(User.class)))
+                .thenThrow(new DocumentAlreadyRegisteredException("1020304050"));
+
+        mockMvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(VALID_BODY))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409));
     }
 
     @Test

@@ -1,11 +1,11 @@
 package co.com.crediya.model.exceptions;
 
 /**
- * Se lanza cuando el correo electrónico ya pertenece a otro solicitante.
+ * Se lanza cuando el email ya pertenece a otro usuario.
  */
 public class EmailAlreadyRegisteredException extends BusinessException {
 
-    public EmailAlreadyRegisteredException(String correoElectronico) {
-        super("El correo electrónico " + correoElectronico + " ya está registrado");
+    public EmailAlreadyRegisteredException(String email) {
+        super("El email " + email + " ya está registrado");
     }
 }

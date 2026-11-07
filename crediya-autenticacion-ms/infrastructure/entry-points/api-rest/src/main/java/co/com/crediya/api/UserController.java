@@ -35,18 +35,18 @@ public class UserController {
     private final UserUseCase userUseCase;
 
     @Operation(summary = "Registrar un usuario",
-            description = "Registra un solicitante. Valida obligatorios, formato de correo, "
-                    + "salario entre 0 y 15.000.000 y que el correo no esté registrado.")
+            description = "Registra un usuario en la tabla usuario. Valida obligatorios, formato de email, "
+                    + "salario entre 0 y 15.000.000, que el rol exista y que email y documento no estén registrados.")
     @ApiResponse(responseCode = "201", description = "Usuario registrado")
     @ApiResponse(responseCode = "400", description = "Datos inválidos",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    @ApiResponse(responseCode = "409", description = "El correo ya está registrado",
+    @ApiResponse(responseCode = "409", description = "El email o el documento ya están registrados",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserResponse> registerUser(@RequestBody RegisterUserRequest request) {
         log.info("POST /api/v1/usuarios - solicitud de registro recibida");
         User registered = userUseCase.registerUser(UserDtoMapper.toDomain(request));
-        log.info("POST /api/v1/usuarios - usuario registrado con id {}", registered.getId());
+        log.info("POST /api/v1/usuarios - usuario registrado con id {}", registered.getIdUsuario());
         return ResponseEntity.status(HttpStatus.CREATED).body(UserDtoMapper.toResponse(registered));
     }
 }

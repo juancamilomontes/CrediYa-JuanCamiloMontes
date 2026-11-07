@@ -4,9 +4,11 @@ import co.com.crediya.jpa.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- * Repositorio Spring Data JPA. JpaRepository ya incluye CrudRepository y QueryByExampleExecutor.
+ * Repositorio Spring Data JPA de la tabla "usuario".
  */
-public interface JPARepository extends JpaRepository<UserEntity, String> {
+public interface JPARepository extends JpaRepository<UserEntity, Integer> {
 
-    boolean existsByCorreoElectronico(String correoElectronico);
+    boolean existsByEmail(String email);
+
+    boolean existsByDocumentoIdentidad(String documentoIdentidad);
 }

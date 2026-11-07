@@ -1,6 +1,8 @@
 package co.com.crediya.api.exception;
 
 import co.com.crediya.api.dto.ErrorResponse;
+import co.com.crediya.model.exceptions.BusinessException;
+import co.com.crediya.model.exceptions.DocumentAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.EmailAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.InvalidUserDataException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,7 +29,7 @@ public class GlobalExceptionHandler {
 
     static final String MENSAJE_JSON_INVALIDO =
             "El cuerpo de la petición no es válido. Revisa el formato JSON y los tipos de datos "
-                    + "(salario_base numérico, fecha_nacimiento con formato yyyy-MM-dd)";
+                    + "(salario_base numérico, id_rol entero)";
     static final String MENSAJE_ERROR_INTERNO = "Ocurrió un error inesperado. Intenta más tarde";
 
     @ExceptionHandler(InvalidUserDataException.class)
@@ -36,9 +38,8 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getErrors(), request);
     }
 
-    @ExceptionHandler(EmailAlreadyRegisteredException.class)
-    public ResponseEntity<ErrorResponse> handleEmailAlreadyRegistered(EmailAlreadyRegisteredException ex,
-                                                                      HttpServletRequest request) {
+    @ExceptionHandler({EmailAlreadyRegisteredException.class, DocumentAlreadyRegisteredException.class})
+    public ResponseEntity<ErrorResponse> handleAlreadyRegistered(BusinessException ex, HttpServletRequest request) {
         log.warn("Conflicto: {}", ex.getMessage());
         return build(HttpStatus.CONFLICT, ex.getMessage(), List.of(), request);
     }

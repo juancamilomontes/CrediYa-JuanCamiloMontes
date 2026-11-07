@@ -1,7 +1,9 @@
 package co.com.crediya.usecase.user;
 
+import co.com.crediya.model.exceptions.DocumentAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.EmailAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.InvalidUserDataException;
+import co.com.crediya.model.role.gateways.RoleRepository;
 import co.com.crediya.model.user.User;
 import co.com.crediya.model.user.gateways.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,13 +16,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,62 +30,77 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UserUseCaseTest {
 
+    private static final Integer ROL_CLIENTE = 3;
+
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private RoleRepository roleRepository;
 
     private UserUseCase userUseCase;
 
     @BeforeEach
     void setUp() {
-        userUseCase = new UserUseCase(userRepository);
+        userUseCase = new UserUseCase(userRepository, roleRepository);
     }
 
     private User validUser() {
         return User.builder()
-                .nombres("Ana")
-                .apellidos("Gomez")
-                .fechaNacimiento(LocalDate.of(1995, 5, 10))
-                .direccion("Calle 1")
+                .nombre("Ana")
+                .apellido("Gomez")
+                .email("ana@mail.com")
+                .documentoIdentidad("1020304050")
                 .telefono("3001234567")
-                .correoElectronico("ana@mail.com")
+                .idRol(ROL_CLIENTE)
                 .salarioBase(new BigDecimal("2500000"))
                 .build();
     }
 
-    @Test
-    void shouldRegisterValidUser() {
-        when(userRepository.existsByCorreoElectronico("ana@mail.com")).thenReturn(false);
-        when(userRepository.save(any(User.class)))
-                .thenAnswer(invocation -> ((User) invocation.getArgument(0)).toBuilder().id("1").build());
-
-        User saved = userUseCase.registerUser(validUser());
-
-        assertEquals("1", saved.getId());
-        assertEquals("ana@mail.com", saved.getCorreoElectronico());
+    private void givenNothingRegistered() {
+        lenient().when(roleRepository.existsById(any())).thenReturn(true);
+        lenient().when(userRepository.existsByEmail(any())).thenReturn(false);
+        lenient().when(userRepository.existsByDocumentoIdentidad(any())).thenReturn(false);
+        lenient().when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
-    void shouldNormalizeEmailAndTrimNamesBeforeSaving() {
+    void shouldRegisterValidUser() {
+        givenNothingRegistered();
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> ((User) invocation.getArgument(0)).toBuilder().idUsuario(1).build());
+
+        User saved = userUseCase.registerUser(validUser());
+
+        assertEquals(1, saved.getIdUsuario());
+        assertEquals("ana@mail.com", saved.getEmail());
+        assertEquals(ROL_CLIENTE, saved.getIdRol());
+    }
+
+    @Test
+    void shouldNormalizeEmailAndTrimFieldsBeforeSaving() {
+        givenNothingRegistered();
         User input = validUser().toBuilder()
-                .id("id-enviado-por-cliente")
-                .nombres("  Ana  ")
-                .correoElectronico("  ANA@Mail.com ")
+                .idUsuario(99)
+                .nombre("  Ana  ")
+                .documentoIdentidad(" 1020304050 ")
+                .email("  ANA@Mail.com ")
                 .build();
-        when(userRepository.existsByCorreoElectronico("ana@mail.com")).thenReturn(false);
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         userUseCase.registerUser(input);
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
-        assertEquals("Ana", captor.getValue().getNombres());
-        assertEquals("ana@mail.com", captor.getValue().getCorreoElectronico());
-        assertNull(captor.getValue().getId());
+        assertEquals("Ana", captor.getValue().getNombre());
+        assertEquals("1020304050", captor.getValue().getDocumentoIdentidad());
+        assertEquals("ana@mail.com", captor.getValue().getEmail());
+        assertNull(captor.getValue().getIdUsuario());
     }
 
     @Test
     void shouldRejectDuplicatedEmail() {
-        when(userRepository.existsByCorreoElectronico("ana@mail.com")).thenReturn(true);
+        givenNothingRegistered();
+        when(userRepository.existsByEmail("ana@mail.com")).thenReturn(true);
 
         User user = validUser();
         assertThrows(EmailAlreadyRegisteredException.class, () -> userUseCase.registerUser(user));
@@ -91,16 +108,40 @@ class UserUseCaseTest {
     }
 
     @Test
+    void shouldRejectDuplicatedDocument() {
+        givenNothingRegistered();
+        when(userRepository.existsByDocumentoIdentidad("1020304050")).thenReturn(true);
+
+        User user = validUser();
+        assertThrows(DocumentAlreadyRegisteredException.class, () -> userUseCase.registerUser(user));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectUnknownRole() {
+        when(roleRepository.existsById(99)).thenReturn(false);
+
+        User user = validUser().toBuilder().idRol(99).build();
+        InvalidUserDataException ex =
+                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
+
+        assertTrue(ex.getErrors().contains(UserUseCase.ROL_INEXISTENTE));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
     void shouldReportAllMissingRequiredFields() {
-        User empty = User.builder().nombres(" ").build();
+        User empty = User.builder().nombre(" ").build();
 
         InvalidUserDataException ex =
                 assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(empty));
 
-        assertEquals(4, ex.getErrors().size());
-        assertTrue(ex.getErrors().contains(UserUseCase.NOMBRES_REQUERIDO));
-        assertTrue(ex.getErrors().contains(UserUseCase.APELLIDOS_REQUERIDO));
-        assertTrue(ex.getErrors().contains(UserUseCase.CORREO_REQUERIDO));
+        assertEquals(6, ex.getErrors().size());
+        assertTrue(ex.getErrors().contains(UserUseCase.NOMBRE_REQUERIDO));
+        assertTrue(ex.getErrors().contains(UserUseCase.APELLIDO_REQUERIDO));
+        assertTrue(ex.getErrors().contains(UserUseCase.EMAIL_REQUERIDO));
+        assertTrue(ex.getErrors().contains(UserUseCase.DOCUMENTO_REQUERIDO));
+        assertTrue(ex.getErrors().contains(UserUseCase.ROL_REQUERIDO));
         assertTrue(ex.getErrors().contains(UserUseCase.SALARIO_REQUERIDO));
         verify(userRepository, never()).save(any());
     }
@@ -108,12 +149,12 @@ class UserUseCaseTest {
     @ParameterizedTest
     @ValueSource(strings = {"ana", "ana@", "ana@mail", "@mail.com", "ana mail@mail.com"})
     void shouldRejectInvalidEmailFormat(String email) {
-        User user = validUser().toBuilder().correoElectronico(email).build();
+        User user = validUser().toBuilder().email(email).build();
 
         InvalidUserDataException ex =
                 assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
 
-        assertTrue(ex.getErrors().contains(UserUseCase.CORREO_INVALIDO));
+        assertTrue(ex.getErrors().contains(UserUseCase.EMAIL_INVALIDO));
     }
 
     @ParameterizedTest
@@ -128,40 +169,12 @@ class UserUseCaseTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"0", "15000000"})
-    void shouldAcceptSalaryAtRangeLimits(String salary) {
-        when(userRepository.existsByCorreoElectronico(any())).thenReturn(false);
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
+    @ValueSource(strings = {"0", "15000000", "2500000.500"})
+    void shouldAcceptValidSalaries(String salary) {
+        givenNothingRegistered();
         User user = validUser().toBuilder().salarioBase(new BigDecimal(salary)).build();
 
         assertEquals(new BigDecimal(salary), userUseCase.registerUser(user).getSalarioBase());
-    }
-
-    @Test
-    void shouldRejectNullUser() {
-        assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(null));
-    }
-
-    @Test
-    void shouldRejectFieldsLongerThanAllowed() {
-        User user = validUser().toBuilder()
-                .nombres("a".repeat(101))
-                .apellidos("b".repeat(101))
-                .direccion("c".repeat(201))
-                .telefono("1".repeat(31))
-                .correoElectronico("x".repeat(145) + "@mail.com")
-                .build();
-
-        InvalidUserDataException ex =
-                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
-
-        assertTrue(ex.getErrors().contains("El campo nombres no puede tener más de 100 caracteres"));
-        assertTrue(ex.getErrors().contains("El campo apellidos no puede tener más de 100 caracteres"));
-        assertTrue(ex.getErrors().contains("El campo direccion no puede tener más de 200 caracteres"));
-        assertTrue(ex.getErrors().contains("El campo telefono no puede tener más de 30 caracteres"));
-        assertTrue(ex.getErrors().contains("El campo correo_electronico no puede tener más de 150 caracteres"));
-        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -175,32 +188,35 @@ class UserUseCaseTest {
     }
 
     @Test
-    void shouldAcceptSalaryWithTrailingZeroDecimals() {
-        when(userRepository.existsByCorreoElectronico(any())).thenReturn(false);
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        User user = validUser().toBuilder().salarioBase(new BigDecimal("2500000.500")).build();
-
-        assertEquals(new BigDecimal("2500000.500"), userUseCase.registerUser(user).getSalarioBase());
-    }
-
-    @Test
-    void shouldRejectBirthDateInTheFuture() {
-        User user = validUser().toBuilder().fechaNacimiento(LocalDate.now().plusDays(1)).build();
+    void shouldRejectFieldsLongerThanAllowed() {
+        User user = validUser().toBuilder()
+                .nombre("a".repeat(101))
+                .apellido("b".repeat(101))
+                .documentoIdentidad("1".repeat(21))
+                .telefono("3".repeat(21))
+                .email("x".repeat(145) + "@mail.com")
+                .build();
 
         InvalidUserDataException ex =
                 assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
 
-        assertTrue(ex.getErrors().contains(UserUseCase.FECHA_NACIMIENTO_FUTURA));
+        assertTrue(ex.getErrors().contains("El campo nombre no puede tener más de 100 caracteres"));
+        assertTrue(ex.getErrors().contains("El campo apellido no puede tener más de 100 caracteres"));
+        assertTrue(ex.getErrors().contains("El campo documento_identidad no puede tener más de 20 caracteres"));
+        assertTrue(ex.getErrors().contains("El campo telefono no puede tener más de 20 caracteres"));
+        assertTrue(ex.getErrors().contains("El campo email no puede tener más de 150 caracteres"));
     }
 
     @Test
-    void shouldAcceptMissingOptionalFields() {
-        when(userRepository.existsByCorreoElectronico(any())).thenReturn(false);
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    void shouldAcceptMissingOptionalPhone() {
+        givenNothingRegistered();
+        User user = validUser().toBuilder().telefono(null).build();
 
-        User user = validUser().toBuilder().fechaNacimiento(null).direccion(null).telefono(null).build();
+        assertNull(userUseCase.registerUser(user).getTelefono());
+    }
 
-        assertEquals("ana@mail.com", userUseCase.registerUser(user).getCorreoElectronico());
+    @Test
+    void shouldRejectNullUser() {
+        assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(null));
     }
 }

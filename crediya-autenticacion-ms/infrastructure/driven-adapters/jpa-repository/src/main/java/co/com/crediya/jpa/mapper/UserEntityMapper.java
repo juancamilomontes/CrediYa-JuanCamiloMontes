@@ -16,13 +16,13 @@ public final class UserEntityMapper {
             return null;
         }
         return UserEntity.builder()
-                .id(user.getId())
-                .nombres(user.getNombres())
-                .apellidos(user.getApellidos())
-                .fechaNacimiento(user.getFechaNacimiento())
-                .direccion(user.getDireccion())
+                .idUsuario(user.getIdUsuario())
+                .nombre(user.getNombre())
+                .apellido(user.getApellido())
+                .email(user.getEmail())
+                .documentoIdentidad(user.getDocumentoIdentidad())
                 .telefono(user.getTelefono())
-                .correoElectronico(user.getCorreoElectronico())
+                .idRol(user.getIdRol())
                 .salarioBase(user.getSalarioBase())
                 .build();
     }
@@ -32,13 +32,13 @@ public final class UserEntityMapper {
             return null;
         }
         return User.builder()
-                .id(entity.getId())
-                .nombres(entity.getNombres())
-                .apellidos(entity.getApellidos())
-                .fechaNacimiento(entity.getFechaNacimiento())
-                .direccion(entity.getDireccion())
+                .idUsuario(entity.getIdUsuario())
+                .nombre(entity.getNombre())
+                .apellido(entity.getApellido())
+                .email(entity.getEmail())
+                .documentoIdentidad(entity.getDocumentoIdentidad())
                 .telefono(entity.getTelefono())
-                .correoElectronico(entity.getCorreoElectronico())
+                .idRol(entity.getIdRol())
                 .salarioBase(entity.getSalarioBase())
                 .build();
     }

@@ -54,8 +54,9 @@ public class JpaConfig {
         if (dialect != null && !dialect.isBlank()) {
             properties.setProperty("hibernate.dialect", dialect);
         }
-        // Crea/actualiza la tabla al arrancar. Para producción se debería usar migraciones (Flyway).
-        properties.setProperty("hibernate.hbm2ddl.auto", "update");
+        // Las tablas las define el diagrama (deployment/database/init.sql). Hibernate NO las crea ni
+        // modifica: solo valida al arrancar que las entidades coincidan con las tablas reales.
+        properties.setProperty("hibernate.hbm2ddl.auto", "validate");
         em.setJpaProperties(properties);
 
         return em;

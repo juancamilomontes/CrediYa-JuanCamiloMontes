@@ -1,7 +1,9 @@
 package co.com.crediya.jpa;
 
 import co.com.crediya.jpa.entity.UserEntity;
+import co.com.crediya.model.exceptions.DocumentAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.EmailAlreadyRegisteredException;
+import co.com.crediya.model.exceptions.InvalidUserDataException;
 import co.com.crediya.model.user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +13,6 @@ import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -31,12 +32,12 @@ class JPARepositoryAdapterTest {
     private JPARepositoryAdapter adapter;
 
     private final User user = User.builder()
-            .nombres("Ana")
-            .apellidos("Gomez")
-            .fechaNacimiento(LocalDate.of(1995, 5, 10))
-            .direccion("Calle 1")
+            .nombre("Ana")
+            .apellido("Gomez")
+            .email("ana@mail.com")
+            .documentoIdentidad("1020304050")
             .telefono("3001234567")
-            .correoElectronico("ana@mail.com")
+            .idRol(3)
             .salarioBase(new BigDecimal("2500000"))
             .build();
 
@@ -50,35 +51,47 @@ class JPARepositoryAdapterTest {
     void shouldSaveUserAndMapAllFields() {
         when(repository.saveAndFlush(any(UserEntity.class))).thenAnswer(invocation -> {
             UserEntity entity = invocation.getArgument(0);
-            entity.setId("generated-id");
+            entity.setIdUsuario(7);
             return entity;
         });
 
         User saved = adapter.save(user);
 
-        assertEquals("generated-id", saved.getId());
-        assertEquals("Ana", saved.getNombres());
-        assertEquals("Gomez", saved.getApellidos());
-        assertEquals(LocalDate.of(1995, 5, 10), saved.getFechaNacimiento());
-        assertEquals("Calle 1", saved.getDireccion());
+        assertEquals(7, saved.getIdUsuario());
+        assertEquals("Ana", saved.getNombre());
+        assertEquals("Gomez", saved.getApellido());
+        assertEquals("ana@mail.com", saved.getEmail());
+        assertEquals("1020304050", saved.getDocumentoIdentidad());
         assertEquals("3001234567", saved.getTelefono());
-        assertEquals("ana@mail.com", saved.getCorreoElectronico());
+        assertEquals(3, saved.getIdRol());
         assertEquals(new BigDecimal("2500000"), saved.getSalarioBase());
     }
 
     @Test
-    void shouldTranslateEmailUniqueViolationToBusinessException() {
-        when(repository.saveAndFlush(any(UserEntity.class)))
-                .thenThrow(new DataIntegrityViolationException(
-                        "duplicate key value violates unique constraint \"uk_usuarios_correo_electronico\""));
+    void shouldTranslateEmailUniqueViolation() {
+        givenSaveFailsWith("duplicate key value violates unique constraint \"usuario_email_key\"");
 
         assertThrows(EmailAlreadyRegisteredException.class, () -> adapter.save(user));
     }
 
     @Test
-    void shouldNotReportDuplicatedEmailForOtherIntegrityErrors() {
+    void shouldTranslateDocumentUniqueViolation() {
+        givenSaveFailsWith("duplicate key value violates unique constraint \"usuario_documento_identidad_key\"");
+
+        assertThrows(DocumentAlreadyRegisteredException.class, () -> adapter.save(user));
+    }
+
+    @Test
+    void shouldTranslateRoleForeignKeyViolation() {
+        givenSaveFailsWith("insert or update on table \"usuario\" violates foreign key constraint \"fk_usuario_rol\"");
+
+        assertThrows(InvalidUserDataException.class, () -> adapter.save(user));
+    }
+
+    @Test
+    void shouldRethrowOtherIntegrityErrors() {
         DataIntegrityViolationException otherError =
-                new DataIntegrityViolationException("value too long for type character varying(30)");
+                new DataIntegrityViolationException("value too long for type character varying(20)");
         when(repository.saveAndFlush(any(UserEntity.class))).thenThrow(otherError);
 
         DataIntegrityViolationException thrown =
@@ -88,8 +101,20 @@ class JPARepositoryAdapterTest {
 
     @Test
     void shouldCheckIfEmailExists() {
-        when(repository.existsByCorreoElectronico("ana@mail.com")).thenReturn(true);
+        when(repository.existsByEmail("ana@mail.com")).thenReturn(true);
 
-        assertTrue(adapter.existsByCorreoElectronico("ana@mail.com"));
+        assertTrue(adapter.existsByEmail("ana@mail.com"));
+    }
+
+    @Test
+    void shouldCheckIfDocumentExists() {
+        when(repository.existsByDocumentoIdentidad("1020304050")).thenReturn(true);
+
+        assertTrue(adapter.existsByDocumentoIdentidad("1020304050"));
+    }
+
+    private void givenSaveFailsWith(String message) {
+        when(repository.saveAndFlush(any(UserEntity.class)))
+                .thenThrow(new DataIntegrityViolationException(message));
     }
 }
