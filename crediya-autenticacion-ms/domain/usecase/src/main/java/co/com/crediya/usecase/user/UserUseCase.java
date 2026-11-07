@@ -1,14 +1,15 @@
 package co.com.crediya.usecase.user;
 
+import co.com.crediya.model.exceptions.DocumentAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.EmailAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.InvalidUserDataException;
+import co.com.crediya.model.role.gateways.RoleRepository;
 import co.com.crediya.model.user.User;
 import co.com.crediya.model.user.gateways.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -26,39 +27,39 @@ public class UserUseCase {
     static final BigDecimal SALARIO_MAXIMO = new BigDecimal("15000000");
     static final int SALARIO_MAX_DECIMALES = 2;
 
-    static final int MAX_NOMBRES = 100;
-    static final int MAX_APELLIDOS = 100;
-    static final int MAX_DIRECCION = 200;
-    static final int MAX_TELEFONO = 30;
-    static final int MAX_CORREO = 150;
+    static final int MAX_NOMBRE = 100;
+    static final int MAX_APELLIDO = 100;
+    static final int MAX_EMAIL = 150;
+    static final int MAX_DOCUMENTO = 20;
+    static final int MAX_TELEFONO = 20;
 
-    static final String NOMBRES_REQUERIDO = "El campo nombres es obligatorio";
-    static final String APELLIDOS_REQUERIDO = "El campo apellidos es obligatorio";
-    static final String CORREO_REQUERIDO = "El campo correo_electronico es obligatorio";
-    static final String CORREO_INVALIDO = "El correo_electronico no tiene un formato válido";
+    static final String NOMBRE_REQUERIDO = "El campo nombre es obligatorio";
+    static final String APELLIDO_REQUERIDO = "El campo apellido es obligatorio";
+    static final String EMAIL_REQUERIDO = "El campo email es obligatorio";
+    static final String EMAIL_INVALIDO = "El email no tiene un formato válido";
+    static final String DOCUMENTO_REQUERIDO = "El campo documento_identidad es obligatorio";
+    static final String ROL_REQUERIDO = "El campo id_rol es obligatorio";
+    static final String ROL_INEXISTENTE = "El rol indicado no existe";
     static final String SALARIO_REQUERIDO = "El campo salario_base es obligatorio";
     static final String SALARIO_FUERA_DE_RANGO = "El salario_base debe estar entre 0 y 15000000";
     static final String SALARIO_DECIMALES = "El salario_base no puede tener más de 2 decimales";
-    static final String FECHA_NACIMIENTO_FUTURA = "La fecha_nacimiento no puede ser una fecha futura";
     private static final String LONGITUD_MAXIMA = "El campo %s no puede tener más de %d caracteres";
 
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
 
     public User registerUser(User user) {
         log.info("Iniciando registro de usuario");
         User normalizedUser = normalize(user);
         validate(normalizedUser);
-
-        if (userRepository.existsByCorreoElectronico(normalizedUser.getCorreoElectronico())) {
-            log.warning("Intento de registro con correo ya existente");
-            throw new EmailAlreadyRegisteredException(normalizedUser.getCorreoElectronico());
-        }
+        validateRoleExists(normalizedUser.getIdRol());
+        validateNotRegistered(normalizedUser);
 
         User savedUser = userRepository.save(normalizedUser);
-        log.info(() -> "Usuario registrado con id " + savedUser.getId());
+        log.info(() -> "Usuario registrado con id " + savedUser.getIdUsuario());
         return savedUser;
     }
 
@@ -67,31 +68,52 @@ public class UserUseCase {
             throw new InvalidUserDataException(List.of("Los datos del usuario son obligatorios"));
         }
         return user.toBuilder()
-                .id(null)
-                .nombres(trim(user.getNombres()))
-                .apellidos(trim(user.getApellidos()))
-                .direccion(trim(user.getDireccion()))
+                .idUsuario(null)
+                .nombre(trim(user.getNombre()))
+                .apellido(trim(user.getApellido()))
+                .email(normalizeEmail(user.getEmail()))
+                .documentoIdentidad(trim(user.getDocumentoIdentidad()))
                 .telefono(trim(user.getTelefono()))
-                .correoElectronico(normalizeEmail(user.getCorreoElectronico()))
                 .build();
     }
 
     private void validate(User user) {
         List<String> errors = new ArrayList<>();
-        validateRequired(user.getNombres(), NOMBRES_REQUERIDO, errors);
-        validateRequired(user.getApellidos(), APELLIDOS_REQUERIDO, errors);
-        validateEmail(user.getCorreoElectronico(), errors);
+        validateRequired(user.getNombre(), NOMBRE_REQUERIDO, errors);
+        validateRequired(user.getApellido(), APELLIDO_REQUERIDO, errors);
+        validateEmail(user.getEmail(), errors);
+        validateRequired(user.getDocumentoIdentidad(), DOCUMENTO_REQUERIDO, errors);
+        if (user.getIdRol() == null) {
+            errors.add(ROL_REQUERIDO);
+        }
         validateSalary(user.getSalarioBase(), errors);
-        validateBirthDate(user.getFechaNacimiento(), errors);
-        validateMaxLength("nombres", user.getNombres(), MAX_NOMBRES, errors);
-        validateMaxLength("apellidos", user.getApellidos(), MAX_APELLIDOS, errors);
-        validateMaxLength("direccion", user.getDireccion(), MAX_DIRECCION, errors);
+        validateMaxLength("nombre", user.getNombre(), MAX_NOMBRE, errors);
+        validateMaxLength("apellido", user.getApellido(), MAX_APELLIDO, errors);
+        validateMaxLength("email", user.getEmail(), MAX_EMAIL, errors);
+        validateMaxLength("documento_identidad", user.getDocumentoIdentidad(), MAX_DOCUMENTO, errors);
         validateMaxLength("telefono", user.getTelefono(), MAX_TELEFONO, errors);
-        validateMaxLength("correo_electronico", user.getCorreoElectronico(), MAX_CORREO, errors);
 
         if (!errors.isEmpty()) {
             log.warning(() -> "Datos de usuario inválidos: " + errors);
             throw new InvalidUserDataException(errors);
+        }
+    }
+
+    private void validateRoleExists(Integer idRol) {
+        if (!roleRepository.existsById(idRol)) {
+            log.warning(() -> "Rol inexistente: " + idRol);
+            throw new InvalidUserDataException(List.of(ROL_INEXISTENTE));
+        }
+    }
+
+    private void validateNotRegistered(User user) {
+        if (userRepository.existsByEmail(user.getEmail())) {
+            log.warning("Intento de registro con email ya existente");
+            throw new EmailAlreadyRegisteredException(user.getEmail());
+        }
+        if (userRepository.existsByDocumentoIdentidad(user.getDocumentoIdentidad())) {
+            log.warning("Intento de registro con documento ya existente");
+            throw new DocumentAlreadyRegisteredException(user.getDocumentoIdentidad());
         }
     }
 
@@ -103,9 +125,9 @@ public class UserUseCase {
 
     private void validateEmail(String email, List<String> errors) {
         if (isBlank(email)) {
-            errors.add(CORREO_REQUERIDO);
+            errors.add(EMAIL_REQUERIDO);
         } else if (!EMAIL_PATTERN.matcher(email).matches()) {
-            errors.add(CORREO_INVALIDO);
+            errors.add(EMAIL_INVALIDO);
         }
     }
 
@@ -119,12 +141,6 @@ public class UserUseCase {
         }
         if (salary.stripTrailingZeros().scale() > SALARIO_MAX_DECIMALES) {
             errors.add(SALARIO_DECIMALES);
-        }
-    }
-
-    private void validateBirthDate(LocalDate birthDate, List<String> errors) {
-        if (birthDate != null && birthDate.isAfter(LocalDate.now())) {
-            errors.add(FECHA_NACIMIENTO_FUTURA);
         }
     }
 

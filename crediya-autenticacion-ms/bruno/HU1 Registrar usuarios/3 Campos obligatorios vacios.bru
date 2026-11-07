@@ -12,12 +12,12 @@ post {
 
 body:json {
   {
-    "nombres": "",
-    "apellidos": null
+    "nombre": "",
+    "apellido": null
   }
 }
 
 assert {
   res.status: eq 400
-  res.body.errors: length 4
+  res.body.errors: length 6
 }

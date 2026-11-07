@@ -12,22 +12,29 @@ post {
 
 body:json {
   {
-    "nombres": "Maria",
-    "apellidos": "Lopez",
-    "fecha_nacimiento": "1998-03-22",
-    "direccion": "Carrera 7 # 45-10",
+    "nombre": "Maria",
+    "apellido": "Lopez",
+    "email": "{{email}}",
+    "documento_identidad": "{{documento}}",
     "telefono": "3105551234",
-    "correo_electronico": "maria{{$timestamp}}@mail.com",
+    "id_rol": 3,
     "salario_base": 4200000
   }
 }
 
+script:pre-request {
+  // Genera un email y un documento distintos cada vez, para poder enviarla varias veces.
+  const ts = Date.now().toString();
+  bru.setVar("email", "maria" + ts + "@mail.com");
+  bru.setVar("documento", ts.slice(-10));
+}
+
 assert {
   res.status: eq 201
-  res.body.id: isDefined
+  res.body.id_usuario: isDefined
 }
 
 docs {
-  Registra un usuario válido. El correo usa {{$timestamp}} para que sea distinto
-  cada vez y puedas enviarla varias veces sin que responda 409.
+  Registra un usuario válido con rol 3 (CLIENTE).
+  Roles: 1 ADMINISTRADOR, 2 ASESOR, 3 CLIENTE.
 }

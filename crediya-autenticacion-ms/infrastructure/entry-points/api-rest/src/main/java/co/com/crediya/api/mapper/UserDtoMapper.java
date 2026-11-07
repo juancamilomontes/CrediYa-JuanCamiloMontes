@@ -17,25 +17,25 @@ public final class UserDtoMapper {
             return null;
         }
         return User.builder()
-                .nombres(request.nombres())
-                .apellidos(request.apellidos())
-                .fechaNacimiento(request.fechaNacimiento())
-                .direccion(request.direccion())
+                .nombre(request.nombre())
+                .apellido(request.apellido())
+                .email(request.email())
+                .documentoIdentidad(request.documentoIdentidad())
                 .telefono(request.telefono())
-                .correoElectronico(request.correoElectronico())
+                .idRol(request.idRol())
                 .salarioBase(request.salarioBase())
                 .build();
     }
 
     public static UserResponse toResponse(User user) {
         return new UserResponse(
-                user.getId(),
-                user.getNombres(),
-                user.getApellidos(),
-                user.getFechaNacimiento(),
-                user.getDireccion(),
+                user.getIdUsuario(),
+                user.getNombre(),
+                user.getApellido(),
+                user.getEmail(),
+                user.getDocumentoIdentidad(),
                 user.getTelefono(),
-                user.getCorreoElectronico(),
+                user.getIdRol(),
                 user.getSalarioBase()
         );
     }

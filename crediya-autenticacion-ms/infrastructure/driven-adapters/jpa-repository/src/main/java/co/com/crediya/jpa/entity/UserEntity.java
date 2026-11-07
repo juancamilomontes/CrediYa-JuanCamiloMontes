@@ -6,7 +6,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,15 +13,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 /**
- * Representación del usuario en la base de datos (tabla "usuarios").
+ * Representación de la tabla "usuario" del diagrama.
  * Es distinta de la entidad de dominio User para no acoplar el negocio a JPA.
  */
 @Entity
-@Table(name = "usuarios", uniqueConstraints = @UniqueConstraint(
-        name = UserEntity.EMAIL_UNIQUE_CONSTRAINT, columnNames = "correo_electronico"))
+@Table(name = "usuario")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,30 +27,34 @@ import java.time.LocalDate;
 @Builder
 public class UserEntity {
 
-    public static final String EMAIL_UNIQUE_CONSTRAINT = "uk_usuarios_correo_electronico";
+    /** Nombres de las restricciones tal como están en la base de datos. */
+    public static final String EMAIL_UNIQUE_CONSTRAINT = "usuario_email_key";
+    public static final String DOCUMENTO_UNIQUE_CONSTRAINT = "usuario_documento_identidad_key";
+    public static final String ROL_FOREIGN_KEY = "fk_usuario_rol";
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_usuario")
+    private Integer idUsuario;
 
-    @Column(nullable = false, length = 100)
-    private String nombres;
+    @Column(name = "nombre", nullable = false, length = 100)
+    private String nombre;
 
-    @Column(nullable = false, length = 100)
-    private String apellidos;
+    @Column(name = "apellido", nullable = false, length = 100)
+    private String apellido;
 
-    @Column(name = "fecha_nacimiento")
-    private LocalDate fechaNacimiento;
+    @Column(name = "email", nullable = false, length = 150)
+    private String email;
 
-    @Column(length = 200)
-    private String direccion;
+    @Column(name = "documento_identidad", nullable = false, length = 20)
+    private String documentoIdentidad;
 
-    @Column(length = 30)
+    @Column(name = "telefono", length = 20)
     private String telefono;
 
-    @Column(name = "correo_electronico", nullable = false, length = 150)
-    private String correoElectronico;
+    @Column(name = "id_rol", nullable = false)
+    private Integer idRol;
 
-    @Column(name = "salario_base", nullable = false, precision = 15, scale = 2)
+    @Column(name = "salario_base", precision = 12, scale = 2)
     private BigDecimal salarioBase;
 }

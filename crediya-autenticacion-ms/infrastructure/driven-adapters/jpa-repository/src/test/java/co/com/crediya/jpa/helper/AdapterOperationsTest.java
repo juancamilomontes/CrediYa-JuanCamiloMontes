@@ -30,7 +30,7 @@ class AdapterOperationsTest {
     private JPARepositoryAdapter adapter;
 
     private final UserEntity entity = UserEntity.builder()
-            .id("1").nombres("Ana").apellidos("Gomez").correoElectronico("ana@mail.com").build();
+            .idUsuario(1).nombre("Ana").apellido("Gomez").email("ana@mail.com").build();
 
     @BeforeEach
     void setUp() {
@@ -45,21 +45,21 @@ class AdapterOperationsTest {
         List<User> result = adapter.saveAllEntities(List.of(User.builder().build(), User.builder().build()));
 
         assertEquals(2, result.size());
-        assertEquals("ana@mail.com", result.get(0).getCorreoElectronico());
+        assertEquals("ana@mail.com", result.get(0).getEmail());
     }
 
     @Test
     void testFindById() {
-        when(repository.findById("1")).thenReturn(Optional.of(entity));
+        when(repository.findById(1)).thenReturn(Optional.of(entity));
 
-        assertEquals("Ana", adapter.findById("1").getNombres());
+        assertEquals("Ana", adapter.findById(1).getNombre());
     }
 
     @Test
     void testFindByIdNotFound() {
-        when(repository.findById("2")).thenReturn(Optional.empty());
+        when(repository.findById(2)).thenReturn(Optional.empty());
 
-        assertNull(adapter.findById("2"));
+        assertNull(adapter.findById(2));
     }
 
     @Test
@@ -73,6 +73,6 @@ class AdapterOperationsTest {
     void testFindByExample() {
         when(repository.findAll(any(Example.class))).thenReturn(List.of(entity));
 
-        assertEquals(1, adapter.findByExample(User.builder().nombres("Ana").build()).size());
+        assertEquals(1, adapter.findByExample(User.builder().nombre("Ana").build()).size());
     }
 }

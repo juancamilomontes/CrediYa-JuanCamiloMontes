@@ -1,0 +1,30 @@
+meta {
+  name: 2 Email ya registrado
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/usuarios
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombre": "Otra",
+    "apellido": "Persona",
+    "email": "{{email}}",
+    "documento_identidad": "9999999999",
+    "id_rol": 3,
+    "salario_base": 1000000
+  }
+}
+
+assert {
+  res.status: eq 409
+}
+
+docs {
+  Usa el mismo email que la petición 1. Envía primero la 1 (o corre la carpeta completa).
+}

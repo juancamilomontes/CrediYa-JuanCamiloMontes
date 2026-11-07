@@ -1,0 +1,26 @@
+meta {
+  name: 6 Rol inexistente
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/usuarios
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombre": "Luis",
+    "apellido": "Perez",
+    "email": "luis.rol@mail.com",
+    "documento_identidad": "5566778899",
+    "id_rol": 99,
+    "salario_base": 1000000
+  }
+}
+
+assert {
+  res.status: eq 400
+}
