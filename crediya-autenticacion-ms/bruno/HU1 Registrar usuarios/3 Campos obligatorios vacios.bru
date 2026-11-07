@@ -1,0 +1,23 @@
+meta {
+  name: 3 Campos obligatorios vacios
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/usuarios
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombres": "",
+    "apellidos": null
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.errors: length 4
+}

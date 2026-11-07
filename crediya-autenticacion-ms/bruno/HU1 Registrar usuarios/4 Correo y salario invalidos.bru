@@ -1,0 +1,25 @@
+meta {
+  name: 4 Correo y salario invalidos
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/usuarios
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombres": "Luis",
+    "apellidos": "Perez",
+    "correo_electronico": "luis@",
+    "salario_base": 20000000
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.errors: length 2
+}
