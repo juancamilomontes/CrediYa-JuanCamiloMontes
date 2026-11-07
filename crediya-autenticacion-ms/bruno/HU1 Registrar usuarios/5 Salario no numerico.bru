@@ -1,0 +1,24 @@
+meta {
+  name: 5 Salario no numerico
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/usuarios
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombres": "Luis",
+    "apellidos": "Perez",
+    "correo_electronico": "luis@mail.com",
+    "salario_base": "mucho"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
