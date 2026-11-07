@@ -142,4 +142,65 @@ class UserUseCaseTest {
     void shouldRejectNullUser() {
         assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(null));
     }
+
+    @Test
+    void shouldRejectFieldsLongerThanAllowed() {
+        User user = validUser().toBuilder()
+                .nombres("a".repeat(101))
+                .apellidos("b".repeat(101))
+                .direccion("c".repeat(201))
+                .telefono("1".repeat(31))
+                .correoElectronico("x".repeat(145) + "@mail.com")
+                .build();
+
+        InvalidUserDataException ex =
+                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
+
+        assertTrue(ex.getErrors().contains("El campo nombres no puede tener más de 100 caracteres"));
+        assertTrue(ex.getErrors().contains("El campo apellidos no puede tener más de 100 caracteres"));
+        assertTrue(ex.getErrors().contains("El campo direccion no puede tener más de 200 caracteres"));
+        assertTrue(ex.getErrors().contains("El campo telefono no puede tener más de 30 caracteres"));
+        assertTrue(ex.getErrors().contains("El campo correo_electronico no puede tener más de 150 caracteres"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectSalaryWithMoreThanTwoDecimals() {
+        User user = validUser().toBuilder().salarioBase(new BigDecimal("2500000.123")).build();
+
+        InvalidUserDataException ex =
+                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
+
+        assertTrue(ex.getErrors().contains(UserUseCase.SALARIO_DECIMALES));
+    }
+
+    @Test
+    void shouldAcceptSalaryWithTrailingZeroDecimals() {
+        when(userRepository.existsByCorreoElectronico(any())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User user = validUser().toBuilder().salarioBase(new BigDecimal("2500000.500")).build();
+
+        assertEquals(new BigDecimal("2500000.500"), userUseCase.registerUser(user).getSalarioBase());
+    }
+
+    @Test
+    void shouldRejectBirthDateInTheFuture() {
+        User user = validUser().toBuilder().fechaNacimiento(LocalDate.now().plusDays(1)).build();
+
+        InvalidUserDataException ex =
+                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
+
+        assertTrue(ex.getErrors().contains(UserUseCase.FECHA_NACIMIENTO_FUTURA));
+    }
+
+    @Test
+    void shouldAcceptMissingOptionalFields() {
+        when(userRepository.existsByCorreoElectronico(any())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User user = validUser().toBuilder().fechaNacimiento(null).direccion(null).telefono(null).build();
+
+        assertEquals("ana@mail.com", userUseCase.registerUser(user).getCorreoElectronico());
+    }
 }

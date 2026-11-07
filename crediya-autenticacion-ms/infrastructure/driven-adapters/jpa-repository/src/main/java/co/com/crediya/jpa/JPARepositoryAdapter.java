@@ -12,6 +12,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
+
 /**
  * Driven adapter: implementa el gateway UserRepository del dominio usando JPA.
  */
@@ -38,10 +40,21 @@ public class JPARepositoryAdapter extends AdapterOperations<User, UserEntity, St
             log.debug("Usuario guardado con id {}", saved.getId());
             return saved;
         } catch (DataIntegrityViolationException e) {
-            // La restricción UNIQUE del correo protege el caso de dos registros simultáneos.
-            log.warn("Violación de integridad al guardar el usuario: {}", e.getMostSpecificCause().getMessage());
-            throw new EmailAlreadyRegisteredException(user.getCorreoElectronico());
+            if (isEmailUniqueViolation(e)) {
+                // La restricción UNIQUE del correo protege el caso de dos registros simultáneos.
+                log.warn("Correo duplicado detectado por la base de datos");
+                throw new EmailAlreadyRegisteredException(user.getCorreoElectronico());
+            }
+            log.error("Violación de integridad al guardar el usuario: {}", e.getMostSpecificCause().getMessage());
+            throw e;
         }
+    }
+
+    private static boolean isEmailUniqueViolation(DataIntegrityViolationException e) {
+        String message = String.valueOf(e.getMostSpecificCause().getMessage()).toLowerCase(Locale.ROOT);
+        boolean isUniqueError = message.contains("unique") || message.contains("duplicate");
+        return isUniqueError && (message.contains(UserEntity.EMAIL_UNIQUE_CONSTRAINT)
+                || message.contains("correo_electronico"));
     }
 
     @Override

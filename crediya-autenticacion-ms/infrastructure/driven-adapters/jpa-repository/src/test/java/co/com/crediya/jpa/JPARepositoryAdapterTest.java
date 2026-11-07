@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -66,11 +67,23 @@ class JPARepositoryAdapterTest {
     }
 
     @Test
-    void shouldTranslateUniqueViolationToBusinessException() {
+    void shouldTranslateEmailUniqueViolationToBusinessException() {
         when(repository.saveAndFlush(any(UserEntity.class)))
-                .thenThrow(new DataIntegrityViolationException("duplicate"));
+                .thenThrow(new DataIntegrityViolationException(
+                        "duplicate key value violates unique constraint \"uk_usuarios_correo_electronico\""));
 
         assertThrows(EmailAlreadyRegisteredException.class, () -> adapter.save(user));
+    }
+
+    @Test
+    void shouldNotReportDuplicatedEmailForOtherIntegrityErrors() {
+        DataIntegrityViolationException otherError =
+                new DataIntegrityViolationException("value too long for type character varying(30)");
+        when(repository.saveAndFlush(any(UserEntity.class))).thenThrow(otherError);
+
+        DataIntegrityViolationException thrown =
+                assertThrows(DataIntegrityViolationException.class, () -> adapter.save(user));
+        assertSame(otherError, thrown);
     }
 
     @Test

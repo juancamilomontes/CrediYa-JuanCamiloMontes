@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,13 +21,16 @@ import java.time.LocalDate;
  * Es distinta de la entidad de dominio User para no acoplar el negocio a JPA.
  */
 @Entity
-@Table(name = "usuarios")
+@Table(name = "usuarios", uniqueConstraints = @UniqueConstraint(
+        name = UserEntity.EMAIL_UNIQUE_CONSTRAINT, columnNames = "correo_electronico"))
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class UserEntity {
+
+    public static final String EMAIL_UNIQUE_CONSTRAINT = "uk_usuarios_correo_electronico";
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -47,7 +51,7 @@ public class UserEntity {
     @Column(length = 30)
     private String telefono;
 
-    @Column(name = "correo_electronico", nullable = false, unique = true, length = 150)
+    @Column(name = "correo_electronico", nullable = false, length = 150)
     private String correoElectronico;
 
     @Column(name = "salario_base", nullable = false, precision = 15, scale = 2)
