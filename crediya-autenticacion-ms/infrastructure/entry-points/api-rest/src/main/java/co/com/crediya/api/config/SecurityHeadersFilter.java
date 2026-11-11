@@ -5,14 +5,16 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Configuration
-@WebFilter("/**")
+/**
+ * Agrega cabeceras de seguridad a todas las respuestas.
+ * Spring Boot registra automáticamente cualquier Filter que sea bean y lo aplica a "/*".
+ */
+@Component
 public class SecurityHeadersFilter implements Filter {
 
     @Override
