@@ -1,23 +1,22 @@
 server:
-  port: 8080
+  port: 8081
 spring:
   application:
     name: "crediya-solicitudes-ms"
   devtools:
     add-properties: false
-  h2:
-    console:
-      enabled: true
-      path: "/h2"
   profiles:
     include: null
   datasource:
-    url: "jdbc:h2:mem:test"
-    username: "sa"
-    password: ""
-    driverClassName: "org.h2.Driver"
+    # PostgreSQL en Docker (WSL). El microservicio SOLICITUDES usa su propia base
+    # "crediya_solicitudes" (ver diagrama BD relacional del reto).
+    # Se leen de variables de entorno; si no existen, usa los valores locales de desarrollo.
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/crediya_solicitudes}"
+    username: "${DB_USERNAME:postgres}"
+    password: "${DB_PASSWORD:postgres}"
+    driverClassName: "org.postgresql.Driver"
   jpa:
-    databasePlatform: "org.hibernate.dialect.H2Dialect"
+    open-in-view: false
 management:
   endpoints:
     web:
@@ -28,4 +27,4 @@ management:
       probes:
         enabled: true
 cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8080"
+  allowed-origins: "http://localhost:4200,http://localhost:8081"

@@ -1,20 +1,30 @@
 package co.com.crediya.jpa;
 
-import co.com.crediya.jpa.helper.AdapterOperations;
-import org.reactivecommons.utils.ObjectMapper;
+import co.com.crediya.jpa.entity.SolicitudEntity;
+import co.com.crediya.jpa.mapper.SolicitudEntityMapper;
+import co.com.crediya.model.solicitud.Solicitud;
+import co.com.crediya.model.solicitud.gateways.SolicitudRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Driven adapter: implementa el gateway SolicitudRepository del dominio usando JPA (tabla "solicitud").
+ */
+@Slf4j
 @Repository
-public class JPARepositoryAdapter extends AdapterOperations<Object/* change for domain model */, Object/* change for adapter model */, String, JPARepository>
-// implements ModelRepository from domain
-{
+@RequiredArgsConstructor
+public class JPARepositoryAdapter implements SolicitudRepository {
 
-    public JPARepositoryAdapter(JPARepository repository, ObjectMapper mapper) {
-        /**
-         *  Could be use mapper.mapBuilder if your domain model implement builder pattern
-         *  super(repository, mapper, d -> mapper.mapBuilder(d,ObjectModel.ObjectModelBuilder.class).build());
-         *  Or using mapper.map with the class of the object model
-         */
-        super(repository, mapper, d -> mapper.map(d, Object.class/* change for domain model */));
+    private final JPARepository repository;
+
+    @Override
+    @Transactional
+    public Solicitud save(Solicitud solicitud) {
+        log.debug("Guardando solicitud en base de datos");
+        SolicitudEntity saved = repository.saveAndFlush(SolicitudEntityMapper.toEntity(solicitud));
+        log.debug("Solicitud guardada con id {}", saved.getIdSolicitud());
+        return SolicitudEntityMapper.toDomain(saved);
     }
 }

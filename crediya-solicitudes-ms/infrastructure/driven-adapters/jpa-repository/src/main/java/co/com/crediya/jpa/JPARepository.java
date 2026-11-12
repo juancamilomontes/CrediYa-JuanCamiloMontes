@@ -1,7 +1,10 @@
 package co.com.crediya.jpa;
 
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.query.QueryByExampleExecutor;
+import co.com.crediya.jpa.entity.SolicitudEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface JPARepository extends CrudRepository<Object/* change for adapter model */, String>, QueryByExampleExecutor<Object/* change for adapter model */> {
+/**
+ * Repositorio Spring Data JPA de la tabla "solicitud".
+ */
+public interface JPARepository extends JpaRepository<SolicitudEntity, Integer> {
 }
