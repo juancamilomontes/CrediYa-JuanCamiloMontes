@@ -1,0 +1,40 @@
+meta {
+  name: 1 Registrar usuario valido
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/usuarios
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombre": "Maria",
+    "apellido": "Lopez",
+    "email": "{{email}}",
+    "documento_identidad": "{{documento}}",
+    "telefono": "3105551234",
+    "id_rol": 3,
+    "salario_base": 4200000
+  }
+}
+
+script:pre-request {
+  // Genera un email y un documento distintos cada vez, para poder enviarla varias veces.
+  const ts = Date.now().toString();
+  bru.setVar("email", "maria" + ts + "@mail.com");
+  bru.setVar("documento", ts.slice(-10));
+}
+
+assert {
+  res.status: eq 201
+  res.body.id_usuario: isDefined
+}
+
+docs {
+  Registra un usuario válido con rol 3 (CLIENTE).
+  Roles: 1 ADMINISTRADOR, 2 ASESOR, 3 CLIENTE.
+}

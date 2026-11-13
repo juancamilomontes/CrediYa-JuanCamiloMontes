@@ -1,7 +1,14 @@
 package co.com.crediya.jpa;
 
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.query.QueryByExampleExecutor;
+import co.com.crediya.jpa.entity.UserEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface JPARepository extends CrudRepository<Object/* change for adapter model */, String>, QueryByExampleExecutor<Object/* change for adapter model */> {
+/**
+ * Repositorio Spring Data JPA de la tabla "usuario".
+ */
+public interface JPARepository extends JpaRepository<UserEntity, Integer> {
+
+    boolean existsByEmail(String email);
+
+    boolean existsByDocumentoIdentidad(String documentoIdentidad);
 }

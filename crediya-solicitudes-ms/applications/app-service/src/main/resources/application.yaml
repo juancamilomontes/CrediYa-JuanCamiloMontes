@@ -1,0 +1,30 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: "crediya-solicitudes-ms"
+  devtools:
+    add-properties: false
+  profiles:
+    include: null
+  datasource:
+    # PostgreSQL en Docker (WSL). El microservicio SOLICITUDES usa su propia base
+    # "crediya_solicitudes" (ver diagrama BD relacional del reto).
+    # Se leen de variables de entorno; si no existen, usa los valores locales de desarrollo.
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/crediya_solicitudes}"
+    username: "${DB_USERNAME:postgres}"
+    password: "${DB_PASSWORD:postgres}"
+    driverClassName: "org.postgresql.Driver"
+  jpa:
+    open-in-view: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+cors:
+  allowed-origins: "http://localhost:4200,http://localhost:8081"

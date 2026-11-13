@@ -5,19 +5,17 @@ spring:
     name: "crediya-autenticacion-ms"
   devtools:
     add-properties: false
-  h2:
-    console:
-      enabled: true
-      path: "/h2"
   profiles:
     include: null
   datasource:
-    url: "jdbc:h2:mem:test"
-    username: "sa"
-    password: ""
-    driverClassName: "org.h2.Driver"
+    # PostgreSQL 17 en Docker (WSL): contenedor postgres_local, base mydb.
+    # Se leen de variables de entorno; si no existen, usa los valores locales de desarrollo.
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/mydb}"
+    username: "${DB_USERNAME:postgres}"
+    password: "${DB_PASSWORD:postgres}"
+    driverClassName: "org.postgresql.Driver"
   jpa:
-    databasePlatform: "org.hibernate.dialect.H2Dialect"
+    open-in-view: false
 management:
   endpoints:
     web:
