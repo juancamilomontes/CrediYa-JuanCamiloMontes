@@ -16,8 +16,12 @@ CREATE TABLE IF NOT EXISTS usuario (
     telefono            VARCHAR(20),
     id_rol              INTEGER      NOT NULL,
     salario_base        NUMERIC(12, 2),
+    contrasena          VARCHAR(100),
     CONSTRAINT fk_usuario_rol FOREIGN KEY (id_rol) REFERENCES rol (id_rol)
 );
+
+-- HU3: columna de contraseña (hasheada con BCrypt). Idempotente para bases ya creadas.
+ALTER TABLE usuario ADD COLUMN IF NOT EXISTS contrasena VARCHAR(100);
 
 -- Roles del sistema (HU3: administrador, asesor, cliente).
 INSERT INTO rol (nombre, descripcion) VALUES
@@ -25,3 +29,11 @@ INSERT INTO rol (nombre, descripcion) VALUES
     ('ASESOR', 'Revisa y decide las solicitudes de préstamo'),
     ('CLIENTE', 'Solicitante de préstamos')
 ON CONFLICT (nombre) DO NOTHING;
+
+-- Usuario administrador semilla para poder iniciar sesión y registrar a los demás.
+-- Contraseña en claro: "Admin123" (hash BCrypt). CAMBIAR en cualquier entorno real.
+INSERT INTO usuario (nombre, apellido, email, documento_identidad, telefono, id_rol, salario_base, contrasena)
+SELECT 'Admin', 'CrediYa', 'admin@crediya.com', '0000000000', NULL,
+       (SELECT id_rol FROM rol WHERE nombre = 'ADMINISTRADOR'), 0,
+       '$2a$10$BI5ZwcmZRq8jLfoYC1/oGeCAAUu0yP.1yKJtUaH9Qgg8yYxzBQMZm'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE email = 'admin@crediya.com');

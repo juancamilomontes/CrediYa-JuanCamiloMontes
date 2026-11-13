@@ -27,3 +27,8 @@ management:
         enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
+jwt:
+  # Secreto compartido con el microservicio SOLICITUDES (HS256, mínimo 32 caracteres).
+  # En producción va en AWS Secret Manager (ver diagrama de infraestructura).
+  secret: "${JWT_SECRET:cambia-esta-clave-por-un-secreto-largo-y-seguro-crediya-2026}"
+  expiration-millis: "${JWT_EXPIRATION_MILLIS:3600000}"

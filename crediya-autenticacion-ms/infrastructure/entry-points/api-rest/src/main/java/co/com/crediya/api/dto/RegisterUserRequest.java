@@ -32,6 +32,10 @@ public record RegisterUserRequest(
 
         @Schema(example = "3000000", requiredMode = Schema.RequiredMode.REQUIRED,
                 description = "Entre 0 y 15000000, máximo 2 decimales")
-        @JsonProperty("salario_base") BigDecimal salarioBase
+        @JsonProperty("salario_base") BigDecimal salarioBase,
+
+        @Schema(example = "Secreta123", requiredMode = Schema.RequiredMode.REQUIRED,
+                description = "Contraseña de acceso (mínimo 8 caracteres). Se guarda hasheada.")
+        @JsonProperty("contrasena") String contrasena
 ) {
 }

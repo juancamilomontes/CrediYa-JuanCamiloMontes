@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,9 +43,16 @@ public class SolicitudController {
     @ApiResponse(responseCode = "400", description = "Datos inválidos",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<SolicitudResponse> registrarSolicitud(@RequestBody RegisterSolicitudRequest request) {
+    public ResponseEntity<SolicitudResponse> registrarSolicitud(@RequestBody RegisterSolicitudRequest request,
+                                                                Authentication authentication) {
         log.info("POST /api/v1/solicitud - solicitud de registro recibida");
-        Solicitud registrada = solicitudUseCase.registrarSolicitud(SolicitudDtoMapper.toDomain(request));
+        Solicitud solicitud = SolicitudDtoMapper.toDomain(request);
+        // HU3: la solicitud es SIEMPRE del cliente autenticado (solo para sí mismo).
+        // Se usa el email del token, ignorando el del cuerpo.
+        if (authentication != null && authentication.getName() != null) {
+            solicitud = solicitud.toBuilder().email(authentication.getName()).build();
+        }
+        Solicitud registrada = solicitudUseCase.registrarSolicitud(solicitud);
         log.info("POST /api/v1/solicitud - solicitud registrada con id {}", registrada.getIdSolicitud());
         return ResponseEntity.status(HttpStatus.CREATED).body(SolicitudDtoMapper.toResponse(registrada));
     }

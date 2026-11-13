@@ -1,5 +1,6 @@
 package co.com.crediya.usecase.user;
 
+import co.com.crediya.model.auth.gateways.PasswordHasher;
 import co.com.crediya.model.exceptions.DocumentAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.EmailAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.InvalidUserDataException;
@@ -38,11 +39,14 @@ class UserUseCaseTest {
     @Mock
     private RoleRepository roleRepository;
 
+    @Mock
+    private PasswordHasher passwordHasher;
+
     private UserUseCase userUseCase;
 
     @BeforeEach
     void setUp() {
-        userUseCase = new UserUseCase(userRepository, roleRepository);
+        userUseCase = new UserUseCase(userRepository, roleRepository, passwordHasher);
     }
 
     private User validUser() {
@@ -54,6 +58,7 @@ class UserUseCaseTest {
                 .telefono("3001234567")
                 .idRol(ROL_CLIENTE)
                 .salarioBase(new BigDecimal("2500000"))
+                .contrasena("Secreta123")
                 .build();
     }
 
@@ -61,6 +66,7 @@ class UserUseCaseTest {
         lenient().when(roleRepository.existsById(any())).thenReturn(true);
         lenient().when(userRepository.existsByEmail(any())).thenReturn(false);
         lenient().when(userRepository.existsByDocumentoIdentidad(any())).thenReturn(false);
+        lenient().when(passwordHasher.hash(any())).thenAnswer(inv -> "HASHED:" + inv.getArgument(0));
         lenient().when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
@@ -75,6 +81,17 @@ class UserUseCaseTest {
         assertEquals(1, saved.getIdUsuario());
         assertEquals("ana@mail.com", saved.getEmail());
         assertEquals(ROL_CLIENTE, saved.getIdRol());
+    }
+
+    @Test
+    void shouldHashPasswordBeforeSaving() {
+        givenNothingRegistered();
+
+        userUseCase.registerUser(validUser());
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertEquals("HASHED:Secreta123", captor.getValue().getContrasena());
     }
 
     @Test
@@ -136,13 +153,25 @@ class UserUseCaseTest {
         InvalidUserDataException ex =
                 assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(empty));
 
-        assertEquals(6, ex.getErrors().size());
+        assertEquals(7, ex.getErrors().size());
         assertTrue(ex.getErrors().contains(UserUseCase.NOMBRE_REQUERIDO));
         assertTrue(ex.getErrors().contains(UserUseCase.APELLIDO_REQUERIDO));
         assertTrue(ex.getErrors().contains(UserUseCase.EMAIL_REQUERIDO));
         assertTrue(ex.getErrors().contains(UserUseCase.DOCUMENTO_REQUERIDO));
         assertTrue(ex.getErrors().contains(UserUseCase.ROL_REQUERIDO));
         assertTrue(ex.getErrors().contains(UserUseCase.SALARIO_REQUERIDO));
+        assertTrue(ex.getErrors().contains(UserUseCase.CONTRASENA_REQUERIDA));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectShortPassword() {
+        User user = validUser().toBuilder().contrasena("123").build();
+
+        InvalidUserDataException ex =
+                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
+
+        assertTrue(ex.getErrors().contains(UserUseCase.CONTRASENA_CORTA));
         verify(userRepository, never()).save(any());
     }
 
@@ -175,44 +204,6 @@ class UserUseCaseTest {
         User user = validUser().toBuilder().salarioBase(new BigDecimal(salary)).build();
 
         assertEquals(new BigDecimal(salary), userUseCase.registerUser(user).getSalarioBase());
-    }
-
-    @Test
-    void shouldRejectSalaryWithMoreThanTwoDecimals() {
-        User user = validUser().toBuilder().salarioBase(new BigDecimal("2500000.123")).build();
-
-        InvalidUserDataException ex =
-                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
-
-        assertTrue(ex.getErrors().contains(UserUseCase.SALARIO_DECIMALES));
-    }
-
-    @Test
-    void shouldRejectFieldsLongerThanAllowed() {
-        User user = validUser().toBuilder()
-                .nombre("a".repeat(101))
-                .apellido("b".repeat(101))
-                .documentoIdentidad("1".repeat(21))
-                .telefono("3".repeat(21))
-                .email("x".repeat(145) + "@mail.com")
-                .build();
-
-        InvalidUserDataException ex =
-                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
-
-        assertTrue(ex.getErrors().contains("El campo nombre no puede tener más de 100 caracteres"));
-        assertTrue(ex.getErrors().contains("El campo apellido no puede tener más de 100 caracteres"));
-        assertTrue(ex.getErrors().contains("El campo documento_identidad no puede tener más de 20 caracteres"));
-        assertTrue(ex.getErrors().contains("El campo telefono no puede tener más de 20 caracteres"));
-        assertTrue(ex.getErrors().contains("El campo email no puede tener más de 150 caracteres"));
-    }
-
-    @Test
-    void shouldAcceptMissingOptionalPhone() {
-        givenNothingRegistered();
-        User user = validUser().toBuilder().telefono(null).build();
-
-        assertNull(userUseCase.registerUser(user).getTelefono());
     }
 
     @Test

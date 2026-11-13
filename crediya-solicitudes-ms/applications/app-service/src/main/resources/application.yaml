@@ -28,3 +28,6 @@ management:
         enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8081"
+jwt:
+  # MISMO secreto que el microservicio AUTENTICACION (HS256) para poder validar el token.
+  secret: "${JWT_SECRET:cambia-esta-clave-por-un-secreto-largo-y-seguro-crediya-2026}"

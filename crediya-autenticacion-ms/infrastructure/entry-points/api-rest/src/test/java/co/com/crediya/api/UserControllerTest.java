@@ -34,7 +34,8 @@ class UserControllerTest {
               "documento_identidad": "1020304050",
               "telefono": "3001234567",
               "id_rol": 3,
-              "salario_base": 2500000
+              "salario_base": 2500000,
+              "contrasena": "Secreta123"
             }
             """;
 

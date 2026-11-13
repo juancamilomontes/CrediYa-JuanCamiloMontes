@@ -57,4 +57,7 @@ public class UserEntity {
 
     @Column(name = "salario_base", precision = 12, scale = 2)
     private BigDecimal salarioBase;
+
+    @Column(name = "contrasena", nullable = false, length = 100)
+    private String contrasena;
 }

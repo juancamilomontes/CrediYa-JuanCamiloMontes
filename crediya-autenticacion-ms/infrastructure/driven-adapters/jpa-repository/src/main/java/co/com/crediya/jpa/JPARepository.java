@@ -3,6 +3,8 @@ package co.com.crediya.jpa;
 import co.com.crediya.jpa.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 /**
  * Repositorio Spring Data JPA de la tabla "usuario".
  */
@@ -11,4 +13,6 @@ public interface JPARepository extends JpaRepository<UserEntity, Integer> {
     boolean existsByEmail(String email);
 
     boolean existsByDocumentoIdentidad(String documentoIdentidad);
+
+    Optional<UserEntity> findByEmail(String email);
 }

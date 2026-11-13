@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Driven adapter: implementa el gateway UserRepository del dominio usando JPA (tabla "usuario").
@@ -69,6 +70,12 @@ public class JPARepositoryAdapter extends AdapterOperations<User, UserEntity, In
     @Transactional(readOnly = true)
     public boolean existsByDocumentoIdentidad(String documentoIdentidad) {
         return repository.existsByDocumentoIdentidad(documentoIdentidad);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<User> findByEmail(String email) {
+        return repository.findByEmail(email).map(UserEntityMapper::toDomain);
     }
 
     @Override

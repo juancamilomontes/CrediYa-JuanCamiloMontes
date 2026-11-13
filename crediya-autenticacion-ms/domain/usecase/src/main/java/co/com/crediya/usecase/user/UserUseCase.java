@@ -1,5 +1,6 @@
 package co.com.crediya.usecase.user;
 
+import co.com.crediya.model.auth.gateways.PasswordHasher;
 import co.com.crediya.model.exceptions.DocumentAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.EmailAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.InvalidUserDataException;
@@ -32,6 +33,8 @@ public class UserUseCase {
     static final int MAX_EMAIL = 150;
     static final int MAX_DOCUMENTO = 20;
     static final int MAX_TELEFONO = 20;
+    static final int MIN_CONTRASENA = 8;
+    static final int MAX_CONTRASENA = 72;
 
     static final String NOMBRE_REQUERIDO = "El campo nombre es obligatorio";
     static final String APELLIDO_REQUERIDO = "El campo apellido es obligatorio";
@@ -43,6 +46,8 @@ public class UserUseCase {
     static final String SALARIO_REQUERIDO = "El campo salario_base es obligatorio";
     static final String SALARIO_FUERA_DE_RANGO = "El salario_base debe estar entre 0 y 15000000";
     static final String SALARIO_DECIMALES = "El salario_base no puede tener más de 2 decimales";
+    static final String CONTRASENA_REQUERIDA = "El campo contrasena es obligatorio";
+    static final String CONTRASENA_CORTA = "La contrasena debe tener al menos 8 caracteres";
     private static final String LONGITUD_MAXIMA = "El campo %s no puede tener más de %d caracteres";
 
     private static final Pattern EMAIL_PATTERN =
@@ -50,6 +55,7 @@ public class UserUseCase {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordHasher passwordHasher;
 
     public User registerUser(User user) {
         log.info("Iniciando registro de usuario");
@@ -58,7 +64,11 @@ public class UserUseCase {
         validateRoleExists(normalizedUser.getIdRol());
         validateNotRegistered(normalizedUser);
 
-        User savedUser = userRepository.save(normalizedUser);
+        User toSave = normalizedUser.toBuilder()
+                .contrasena(passwordHasher.hash(normalizedUser.getContrasena()))
+                .build();
+
+        User savedUser = userRepository.save(toSave);
         log.info(() -> "Usuario registrado con id " + savedUser.getIdUsuario());
         return savedUser;
     }
@@ -87,6 +97,7 @@ public class UserUseCase {
             errors.add(ROL_REQUERIDO);
         }
         validateSalary(user.getSalarioBase(), errors);
+        validateContrasena(user.getContrasena(), errors);
         validateMaxLength("nombre", user.getNombre(), MAX_NOMBRE, errors);
         validateMaxLength("apellido", user.getApellido(), MAX_APELLIDO, errors);
         validateMaxLength("email", user.getEmail(), MAX_EMAIL, errors);
@@ -141,6 +152,19 @@ public class UserUseCase {
         }
         if (salary.stripTrailingZeros().scale() > SALARIO_MAX_DECIMALES) {
             errors.add(SALARIO_DECIMALES);
+        }
+    }
+
+    private void validateContrasena(String contrasena, List<String> errors) {
+        if (isBlank(contrasena)) {
+            errors.add(CONTRASENA_REQUERIDA);
+            return;
+        }
+        if (contrasena.length() < MIN_CONTRASENA) {
+            errors.add(CONTRASENA_CORTA);
+        }
+        if (contrasena.length() > MAX_CONTRASENA) {
+            errors.add(String.format(LONGITUD_MAXIMA, "contrasena", MAX_CONTRASENA));
         }
     }
 

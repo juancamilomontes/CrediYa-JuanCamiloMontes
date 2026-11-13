@@ -24,6 +24,7 @@ public final class UserDtoMapper {
                 .telefono(request.telefono())
                 .idRol(request.idRol())
                 .salarioBase(request.salarioBase())
+                .contrasena(request.contrasena())
                 .build();
     }
 

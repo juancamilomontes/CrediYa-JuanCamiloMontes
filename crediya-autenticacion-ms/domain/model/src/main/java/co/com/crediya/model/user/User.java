@@ -26,4 +26,6 @@ public class User {
     private String telefono;
     private Integer idRol;
     private BigDecimal salarioBase;
+    /** Contraseña: en texto plano al registrar/loguear; hasheada (BCrypt) al persistir. */
+    private String contrasena;
 }

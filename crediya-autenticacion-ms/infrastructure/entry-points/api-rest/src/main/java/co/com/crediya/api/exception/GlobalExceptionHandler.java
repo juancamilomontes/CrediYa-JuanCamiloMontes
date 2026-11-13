@@ -4,6 +4,7 @@ import co.com.crediya.api.dto.ErrorResponse;
 import co.com.crediya.model.exceptions.BusinessException;
 import co.com.crediya.model.exceptions.DocumentAlreadyRegisteredException;
 import co.com.crediya.model.exceptions.EmailAlreadyRegisteredException;
+import co.com.crediya.model.exceptions.InvalidCredentialsException;
 import co.com.crediya.model.exceptions.InvalidUserDataException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAlreadyRegistered(BusinessException ex, HttpServletRequest request) {
         log.warn("Conflicto: {}", ex.getMessage());
         return build(HttpStatus.CONFLICT, ex.getMessage(), List.of(), request);
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex,
+                                                                  HttpServletRequest request) {
+        log.warn("Login fallido: credenciales inválidas");
+        return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), List.of(), request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
