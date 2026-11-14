@@ -10,8 +10,6 @@ import co.com.crediya.model.user.gateways.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,8 +24,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+/**
+ * Prueba el FLUJO del registro. Las reglas de formato se prueban en UserValidatorTest.
+ */
 @ExtendWith(MockitoExtension.class)
 class UserUseCaseTest {
 
@@ -95,7 +97,7 @@ class UserUseCaseTest {
     }
 
     @Test
-    void shouldNormalizeEmailAndTrimFieldsBeforeSaving() {
+    void shouldNormalizeFieldsAndIgnoreClientIdBeforeSaving() {
         givenNothingRegistered();
         User input = validUser().toBuilder()
                 .idUsuario(99)
@@ -112,6 +114,14 @@ class UserUseCaseTest {
         assertEquals("1020304050", captor.getValue().getDocumentoIdentidad());
         assertEquals("ana@mail.com", captor.getValue().getEmail());
         assertNull(captor.getValue().getIdUsuario());
+    }
+
+    @Test
+    void shouldNotTouchRepositoriesWhenFormatIsInvalid() {
+        User invalid = validUser().toBuilder().email("ana@").build();
+
+        assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(invalid));
+        verifyNoInteractions(roleRepository, userRepository, passwordHasher);
     }
 
     @Test
@@ -144,66 +154,6 @@ class UserUseCaseTest {
 
         assertTrue(ex.getErrors().contains(UserUseCase.ROL_INEXISTENTE));
         verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void shouldReportAllMissingRequiredFields() {
-        User empty = User.builder().nombre(" ").build();
-
-        InvalidUserDataException ex =
-                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(empty));
-
-        assertEquals(7, ex.getErrors().size());
-        assertTrue(ex.getErrors().contains(UserUseCase.NOMBRE_REQUERIDO));
-        assertTrue(ex.getErrors().contains(UserUseCase.APELLIDO_REQUERIDO));
-        assertTrue(ex.getErrors().contains(UserUseCase.EMAIL_REQUERIDO));
-        assertTrue(ex.getErrors().contains(UserUseCase.DOCUMENTO_REQUERIDO));
-        assertTrue(ex.getErrors().contains(UserUseCase.ROL_REQUERIDO));
-        assertTrue(ex.getErrors().contains(UserUseCase.SALARIO_REQUERIDO));
-        assertTrue(ex.getErrors().contains(UserUseCase.CONTRASENA_REQUERIDA));
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void shouldRejectShortPassword() {
-        User user = validUser().toBuilder().contrasena("123").build();
-
-        InvalidUserDataException ex =
-                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
-
-        assertTrue(ex.getErrors().contains(UserUseCase.CONTRASENA_CORTA));
-        verify(userRepository, never()).save(any());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"ana", "ana@", "ana@mail", "@mail.com", "ana mail@mail.com"})
-    void shouldRejectInvalidEmailFormat(String email) {
-        User user = validUser().toBuilder().email(email).build();
-
-        InvalidUserDataException ex =
-                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
-
-        assertTrue(ex.getErrors().contains(UserUseCase.EMAIL_INVALIDO));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"-1", "15000000.01", "20000000"})
-    void shouldRejectSalaryOutOfRange(String salary) {
-        User user = validUser().toBuilder().salarioBase(new BigDecimal(salary)).build();
-
-        InvalidUserDataException ex =
-                assertThrows(InvalidUserDataException.class, () -> userUseCase.registerUser(user));
-
-        assertTrue(ex.getErrors().contains(UserUseCase.SALARIO_FUERA_DE_RANGO));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"0", "15000000", "2500000.500"})
-    void shouldAcceptValidSalaries(String salary) {
-        givenNothingRegistered();
-        User user = validUser().toBuilder().salarioBase(new BigDecimal(salary)).build();
-
-        assertEquals(new BigDecimal(salary), userUseCase.registerUser(user).getSalarioBase());
     }
 
     @Test

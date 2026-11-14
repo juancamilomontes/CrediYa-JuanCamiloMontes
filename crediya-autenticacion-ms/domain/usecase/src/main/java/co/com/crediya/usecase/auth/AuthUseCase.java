@@ -3,6 +3,7 @@ package co.com.crediya.usecase.auth;
 import co.com.crediya.model.auth.Session;
 import co.com.crediya.model.auth.gateways.PasswordHasher;
 import co.com.crediya.model.auth.gateways.TokenProvider;
+import co.com.crediya.model.common.TextNormalizer;
 import co.com.crediya.model.exceptions.InvalidCredentialsException;
 import co.com.crediya.model.role.Role;
 import co.com.crediya.model.role.gateways.RoleRepository;
@@ -10,8 +11,6 @@ import co.com.crediya.model.user.User;
 import co.com.crediya.model.user.gateways.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
-
-import java.util.Locale;
 
 /**
  * HU3 - Inicio de sesión. Valida credenciales y entrega un token de sesión (JWT).
@@ -28,7 +27,7 @@ public class AuthUseCase {
 
     public Session login(String email, String rawPassword) {
         log.info("Intento de inicio de sesión");
-        String normalizedEmail = email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+        String normalizedEmail = TextNormalizer.normalizeEmail(email);
 
         User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> {
